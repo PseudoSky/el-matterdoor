@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>mesh test</title>
+		<meta charset="utf-8">
+		<style>
+			body {
+				margin: 0px;
+				background-color: #000000;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+
+		<script src="lib/three.min.js"></script>
+		<script src="lib/jquery.min.js"></script>
+		<script src="lib/stats.min.js"></script>
+		<script src="lib/ColladaLoader.js"></script>
+		<script src="lib/STLLoader.js"></script>
+		<script src="js/orbitcam.js"></script>
+        <script src="lib/OBJLoader.js"></script>
+		<script src="js/basegrid.js"></script>
+		<script src="/socket.io/socket.io.js"></script>
+
+		<script>
+
+			var camera, scene, renderer;
+			var stats;
+
+			var windowX, windowY;
+			var windowHalfX, windowHalfY;
+
+			var thegrid;
+			var socket;
+			var prevVertices = new THREE.Vector3(0, 0, 0);
+			var bodyMeshes = [];
+			var linePositions = {};
+			init();
+			animate();
+
+			function getSize() {
+				windowX = window.innerWidth;
+				//windowY = window.innerHeight;
+				windowY = window.innerHeight;
+				windowHalfX = windowX / 2.0;
+				windowHalfY = windowY / 2.0;
+				console.log("WX: " + windowX + ", WY: " + windowY);
+			}
+
+			function updateSingleBody(body, index) {
+				bodyMeshes[index].gnode.visible = true;
+				var jspheres = bodyMeshes[index].joints;
+
+				//console.log(body);
+				var jointindex = 0;
+				//console.log(body.joints);
+				var joint = body.joints[3];
+                
+				drawLines(joint.cameraX, joint.cameraY, joint.cameraZ, body.bodyIndex);
+				linePositions[body.bodyIndex] = [joint.cameraX, joint.cameraY, joint.cameraZ];
+				//console.log(linePositions);
+				for (var jointType in body.joints) {
+				    //console.log(jointType);
+					var joint = body.joints[jointType];
+					jspheres[jointindex].position.set(joint.cameraX,
+													  joint.cameraY,
+													  joint.cameraZ);
+					jointindex++;
+				}
+			}
+
+			function hideSingleBody(index) {
+				bodyMeshes[index].gnode.visible = false;
+			}
+
+			function drawLines(x,y,z,index) {
+			    var material = new THREE.LineBasicMaterial({
+			        color: 0xff0000
+			    });
+			    var geometry = new THREE.Geometry();
+			   // console.log(linePositions[index]);
+			    if (linePositions[index] === undefined) {
+			        return;
+			    }
+			    // console.log(linePositions);
+			    console.log(linePositions[index][0]);
+			    geometry.vertices.push(new THREE.Vector3(linePositions[index][0],linePositions[index][1],linePositions[index][2]));
+
+			    geometry.vertices.push(new THREE.Vector3(x, y, z));
+			    var line = new THREE.Line(geometry, material);
+			    console.log(line);
+			    scene.add(line);
+			}
+
+			function createBodies(maxbodies, maxjoints) {
+				var sgeometry = new THREE.SphereGeometry( 0.1, 32, 32 );
+				var smaterial = new THREE.MeshNormalMaterial();
+
+				for(var bidx = 0; bidx < maxbodies; ++bidx) {
+					var b = {};
+					b.gnode = new THREE.Object3D();
+					scene.add(b.gnode);
+					b.joints = [];
+					for(var jidx = 0; jidx < maxjoints; ++jidx) {
+						var sphere = new THREE.Mesh(sgeometry, smaterial);
+						b.gnode.add(sphere);
+						b.gnode.visible = false;
+						b.joints.push(sphere);
+					}
+					bodyMeshes.push(b);
+				}
+			}
+
+			function updateBodies(bodyFrame) {
+				var bodyindex = 0;
+				bodyFrame.bodies.forEach(function(body){
+					if(body.tracked) {
+						updateSingleBody(body, bodyindex);
+						bodyindex++;
+					} else {
+						hideSingleBody(bodyindex);
+					}
+				});
+			}
+
+			function setupSocket() {
+				socket = io.connect();
+				socket.on('bodyFrame', function(bodyFrame){
+					updateBodies(bodyFrame);
+				});
+			}
+
+			function init() {
+				renderer = new THREE.WebGLRenderer({antialias: true});
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.body.appendChild( renderer.domElement );
+
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				document.body.appendChild( stats.domElement );
+
+				getSize();
+
+				//
+
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 1000 );
+				//camera.position.z = 1.0;
+
+				scene = new THREE.Scene();
+
+				// add some lights so we can see stuff
+				scene.add( new THREE.AmbientLight( 0xcccccc ) );
+
+				var directionalLight = new THREE.DirectionalLight( 0xeeeeee );
+				directionalLight.position.x = 0;
+				directionalLight.position.y = 0;
+				directionalLight.position.z = 0;
+				directionalLight.position.normalize();
+				scene.add( directionalLight );
+
+				var pointLight = new THREE.PointLight( 0xffffff, 4 );
+				scene.add(pointLight);
+
+				window.addEventListener( 'resize', onWindowResize, false );
+				window.addEventListener('DOMMouseScroll', mousewheel, false);
+				window.addEventListener('mousewheel', mousewheel, false); var objLoader = new THREE.OBJLoader();
+				var material = new THREE.MeshBasicMaterial({ color: 'white', side: THREE.DoubleSide });
+				objLoader.load('shed.obj', function (obj) {
+				    obj.rotateX(-Math.PI / 2);
+				    obj.position.set(0, 0, 0);
+				    console.log(obj);
+				    //scene.add(obj);
+				});
+
+				thegrid = new BaseGrid(13.0, 8.0, 1.0);
+				thegrid.addToScene(scene);
+
+				initOrbitCamera(camera);
+				createBodies(6, 25);
+				setupSocket();
+			}
+			
+			function mousewheel(event) {
+
+			    var fovMAX = 160;
+			    var fovMIN = 1;
+
+			    camera.fov -= event.wheelDeltaY * 0.05;
+			    camera.fov = Math.max(Math.min(camera.fov, fovMAX), fovMIN);
+			    camera.projectionMatrix = new THREE.Matrix4().makePerspective(camera.fov, window.innerWidth / window.innerHeight, camera.near, camera.far);
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				updateCamera();
+
+				//composer.render();
+				renderer.render(scene, camera);
+
+				stats.update();
+
+			}
+
+		</script>
+
+	</body>
+</html>
