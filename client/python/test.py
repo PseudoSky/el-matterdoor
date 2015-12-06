@@ -6,22 +6,30 @@ testures = ['{"name" : "wave", "confidence" : ".2", "index" : "3"}',
             '{"name" : "push", "confidence" : ".4", "index" : "5"}',
             '{"name" : "step_right", "confidence" : ".5", "index" : "6"}']
 
-class NetworkListener:
+class NetworkTest:
 
-	def __init__(self):
-		self.ipAddresss = "128.237.171.97" #socket.gethostbyname(socket.gethostname())
-		self.udpPort = 9002
-		print("IP Address: ", self.ipAddresss)
-		print("Port Number: ", self.udpPort)
-		self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		self.socket.bind((self.ipAddresss, self.udpPort))
+  def __init__(self):
+    # On school network, this function doesn't work
+    self.get_ip()
+    self.udpPort = 9002
+    print("IP Address: ", self.ip)
+    print("Port Number: ", self.udpPort)
+    self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    self.socket.bind((self.ip, self.udpPort))
 
-	def listen(self):
-		for gest in testures:
-			# self.data, self.address = self.socket.recvfrom(2048)
-			print gest
-			self.socket.sendto(gest, (self.ipAddresss, 9001))
+  def get_ip(self):
+    try:
+      self.ip = socket.gethostbyname(socket.gethostname())
+    except Exception:
+      self.ip = "127.0.0.1"
 
 
-networkListener = NetworkListener()
+  def listen(self):
+    for gest in testures:
+      # self.data, self.address = self.socket.recvfrom(2048)
+      print gest
+      self.socket.sendto(gest, (self.ip, 9001))
+
+
+networkListener = NetworkTest()
 networkListener.listen()

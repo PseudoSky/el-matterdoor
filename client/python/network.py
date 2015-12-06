@@ -10,7 +10,7 @@ gestureCues = []
 
 class MotorController:
   def __init__(self):
-    self.proc = subprocess.Popen('python ../arduino/grbl_streamer.py',
+    self.proc = subprocess.Popen('python client/arduino/grbl_streamer.py',
                         shell=True,
                         stdin=subprocess.PIPE,
                         stdout=subprocess.PIPE,
@@ -33,29 +33,60 @@ class MotorController:
     self.proc.stdin.write('is_running\n')
 
   def kill(self):
-    print "KILLLLLL"
+    print "\n\n"+("*"*50)
+    print "\nAttempting to Kill Motor Control..."
     self.proc.stdin.write('kill\n')
+    self.proc.terminate()
+    print "\nKill Signal Sent..."
+
     try:
-      while True:
+      while self.proc.poll():
+        # if not self.proc.returncode:
+
         next_line=self.proc.stdout.readline()
         if next_line=="Actually killed":
           print next_line
           break
+        next_line=self.proc.stderr.readline()
+        if next_line=="Actually killed":
+          print next_line
+          break
+        else:
+          print "\nProcess Successfully Terminated..."
+          print "\n\n"+("*"*50)
+          return 1
+      print "\nSub Process Successfully Terminated"
+      print "\n"+("*"*50)
+      return 1
     except KeyboardInterrupt:
-      print "dbl"
-    os.kill(self.proc.pid, signal.SIGUSR1)
+      print "\n"+("*"*50)
+      print "\nForce Killing Motor Control..."
+
+      self.proc.kill()
 
 
 class NetworkListener:
 
   def __init__(self, mc):
     self.motor_control=mc
-    self.ipAddresss = "128.237.171.97"#socket.gethostbyname(socket.gethostname())
-    self.udpPort = 9001
-    print("IP Address: ", self.ipAddresss)
-    print("Port Number: ", self.udpPort)
+
+    # On school network, this function doesn't work
+    self.get_ip()
+    self.udp_port = 9001
+    print("IP Address: ", self.ip)
+    print("Port Number: ", self.udp_port)
     self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    self.socket.bind((self.ipAddresss, self.udpPort))
+    self.socket.bind((self.ip, self.udp_port))
+
+    self.listen()
+
+
+
+  def get_ip(self):
+    try:
+      self.ip = socket.gethostbyname(socket.gethostname())
+    except Exception:
+      self.ip = "127.0.0.1"
 
   def listen(self):
       try:
@@ -66,7 +97,9 @@ class NetworkListener:
 
       except KeyboardInterrupt:
         self.motor_control.kill()
+        print "\nClosing Main Thread..."
+        print "\n"+("*"*50)
+        print "\nGoodbye"
 
 motor_control = MotorController()
 networkListener = NetworkListener(motor_control)
-networkListener.listen()

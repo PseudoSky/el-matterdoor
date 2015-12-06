@@ -41,19 +41,24 @@ import time
 import subprocess
 import sys
 import re
+import serial.tools.list_ports
 
 RX_BUFFER_SIZE = 128
 verbose=True
 is_running=False
 
 # Open grbl serial port
-s = serial.Serial('/dev/tty.usbmodem1411',115200)
+# serial.tools.list_ports;
+
+serial_port = '/dev/tty.usbmodem1411'
+for p in serial.tools.list_ports.comports():
+    if 'usbmodem' in p[0]:
+        serial_port=p[0].replace('cu','tty')
+        print serial_port
+s = serial.Serial(serial_port,115200)
 
 
-# Wake up grbl
-s.write("\r\n\r\n")
-time.sleep(2)   # Wait for grbl to initialize
-s.flushInput()  # Flush startup text in serial input
+
 
 # Stream g-code to grbl
 
@@ -106,22 +111,26 @@ cmd=['G21 G90 G17 G94 G54','G0 X0.000','G1 X0.500 F149.944','G1 X0.972 F141.747'
 # sys.stderr.write('grbl_streamer.py: starting\n')
 print 'grbl_streamer.py: starting\n'
 # sys.stderr.flush()
-count=0
-run_gcode(['G21 G90 G17 G94 G54','G0 X0.000'])
-cmd_buffer=[]
 
 try:
+
+    # Wake up grbl
+    s.write("\r\n\r\n")
+    time.sleep(2)   # Wait for grbl to initialize
+    s.flushInput()  # Flush startup text in serial input
+    count=0
+    run_gcode(['G21 G90 G17 G94 G54','G0 X0.000'])
+    cmd_buffer=[]
     while True:
 
         next_line = sys.stdin.readline().strip()
-        # print "next_line: "+next_line
-        # pp("next_line: "+next_line)
 
-        if next_line=="kill":
-            sys.stderr.write("Actually killed\n")
+        if "kill" in next_line:
+            s.close()
+            sys.stdout.write("Actually killed\n")
             # print "Actually killed"
             break
-        elif next_line=="is_running":
+        elif "is_running" in next_line:
             sys.stdout.write(is_running and "Is Running" or "Is Not Running")
             print is_running and "Is Running" or "Is Not Running"
 
@@ -130,9 +139,11 @@ try:
             output=run_gcode([next_line])
 
 except KeyboardInterrupt:
-    print "KILLLLLL ME"
-
+    print "\n\n"+("*"*50)
+    print "\nKilling Motor Control And Closing Connection..."
     s.close()
-
+    print "\nConnection Closed"
+    print "\n"+("*"*50)
+    print "\n\nGoodbye"
 
 s.close()
