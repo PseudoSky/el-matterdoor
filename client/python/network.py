@@ -86,13 +86,17 @@ class NetworkListener:
     try:
       self.ip = socket.gethostbyname(socket.gethostname())
     except Exception:
-      self.ip = "127.0.0.1"
+      self.ip = "128.237.167.114"#"127.0.0.1"
 
   def listen(self):
       try:
         while True:
           self.data, self.address = self.socket.recvfrom(2048)
-          self.motor_control.add_gesture(json.loads(self.data))
+          try:
+            self.motor_control.add_gesture(json.loads(self.data))
+          except Exception:
+            print "Packet dropped: "+self.data
+
           self.motor_control.run()
 
       except KeyboardInterrupt:

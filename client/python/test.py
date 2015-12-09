@@ -21,7 +21,7 @@ class NetworkTest:
     try:
       self.ip = socket.gethostbyname(socket.gethostname())
     except Exception:
-      self.ip = "127.0.0.1"
+      self.ip ="128.237.167.114" #"127.0.0.1"
 
 
   def listen(self):
