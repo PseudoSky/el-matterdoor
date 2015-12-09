@@ -1,37 +1,41 @@
-import sys
-import subprocess
-import time
-import os
-import signal
+from collections import deque
 
+class Behavior(object):
+  """docstring for Behavior"""
+  def __init__(self):
+    super(Behavior, self).__init__()
+    self.Gestures={ "Wave_Left":["G0 Z100","G0 Z-100"],
+                    "Wave_Right":["G0 Z-100","G0 Z100"],
+                    "Spin_Left":["G0 X300 Y300 Z300"],
+                    "Spin_Right":["G0 X-300 Y-300 Z-300"],
+                    "Step_Left":["G0 X100 Y-100"],
+                    "Step_Right":["G0 X-100 Y100"],
+                    "Jump":["G0 X-300 Y300 Z-300","G0 X300 Y-300 Z300"],
+                    "Push":["G0 Y300 Z-300"],
+                    "Pull":["G0 Y-300 Z300"],
+                    "Kick_Left":["G0 X-100 Y-100","G0 X100 Y100"],
+                    "Kick_Right":["G0 X100 Y100","G0 X-100 Y-100"],
+                    "WalkForward":["G0 X600 Y300 Z100"],
+                    "WalkBackward":["G0 X-100 Y-300 Z-600"],
+                    "WalkAway":["G0 X 300","G0 X-300"],
+                    "Clap":["G0 Y100 Z100","G0 Y-100 Z-100"],
+                    "StandStill":["G0 X0 Y0 Z0"]}
 
-print 'One line at a time:'
-proc = subprocess.Popen('python ../arduino/grbl_streamer.py',
-                        shell=True,
-                        stdin=subprocess.PIPE,
-                        stdout=subprocess.PIPE,
-                        )
-for i in range(10):
-    proc.stdin.write('G0 X%.3f F300.944\n' % (10+i*10) )
+    self.default_movement=['G0 X100 F300.944','G0 X120.000 F300.944']
 
-try:
-  while True:
+    self.g_cue=deque()
+    self.last_gesture=None
 
-    time.sleep(5)
-    print "hey hey mama"
-    proc.stdin.write('G0 X%3f F300.944\n' % Math.randInt(100))
-    proc.stdin.write('G0 X120.000 F300.944\n')
-    proc.stdin.write('is_running\n')
+  def for_gesture(self,gesture_name):
+    return self.Gestures[gesture_name]
 
-except KeyboardInterrupt:
-    print "KILLLLLL"
-    proc.stdin.write('kill\n')
-    try:
-      while True:
-        next_line=proc.stdout.readline()
-        if next_line=="Actually killed":
-          print next_line
-          break
-    except KeyboardInterrupt:
-      print "dbl"
-    os.kill(proc.pid, signal.SIGUSR1)
+  def add_gesture(self, g):
+    if((len(self.g_cue) == 0) or  (g["name"] != self.g_cue[-1])):
+      print "Gesture "+g+" added to the queue."
+      self.g_cue.append(g["name"]);
+
+  def next(self):
+    if len(self.g_cue)>0:
+      return self.Gesture[self.g_cue.popleft()]
+    else:
+      return self.default_movement

@@ -1,82 +1,38 @@
 import socket
 import json
-import sys
-import subprocess
-import time
-import os
-import signal
 
-gestureCues = []
 
-class MotorController:
-  def __init__(self):
-    self.proc = subprocess.Popen('python client/arduino/grbl_streamer.py',
-                        shell=True,
-                        stdin=subprocess.PIPE,
-                        stdout=subprocess.PIPE,
-                        )
-    self.g_cue=[]
-
-    for i in range(10):
-      self.proc.stdin.write('G0 X%.3f F300.944\n' % (10+i*10) )
-
-  def add_gesture(self, g):
-    print g
-    if((len(self.g_cue) == 0) or (g["name"] != self.g_cue[-1]["name"])):
-      self.g_cue.append(g);
-
-  def run(self):
-    time.sleep(5)
-    print "hey hey mama"
-    self.proc.stdin.write('G0 X100 F300.944\n')
-    self.proc.stdin.write('G0 X120.000 F300.944\n')
-    self.proc.stdin.write('is_running\n')
-
-  def kill(self):
-    print "\n\n"+("*"*50)
-    print "\nAttempting to Kill Motor Control..."
-    self.proc.stdin.write('kill\n')
-    self.proc.terminate()
-    print "\nKill Signal Sent..."
-
-    try:
-      while self.proc.poll():
-        # if not self.proc.returncode:
-
-        next_line=self.proc.stdout.readline()
-        if next_line=="Actually killed":
-          print next_line
-          break
-        next_line=self.proc.stderr.readline()
-        if next_line=="Actually killed":
-          print next_line
-          break
-        else:
-          print "\nProcess Successfully Terminated..."
-          print "\n\n"+("*"*50)
-          return 1
-      print "\nSub Process Successfully Terminated"
-      print "\n"+("*"*50)
-      return 1
-    except KeyboardInterrupt:
-      print "\n"+("*"*50)
-      print "\nForce Killing Motor Control..."
-
-      self.proc.kill()
-
+from motor_control import MotorController
 
 class NetworkListener:
 
-  def __init__(self, mc):
-    self.motor_control=mc
+  def __init__(self):
+    self.motor_control=MotorController()
 
     # On school network, this function doesn't work
     self.get_ip()
     self.udp_port = 9001
-    print("IP Address: ", self.ip)
-    print("Port Number: ", self.udp_port)
+
+    success=False
     self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    self.socket.bind((self.ip, self.udp_port))
+    for i in [0,7,13,17]:
+      try:
+        self.udp_port+=i
+        self.socket.bind((self.ip, self.udp_port))
+        print "\n"+("*"*50)
+        print "\nBound To {}:{}\n".format(self.ip,self.udp_port)
+        print("IP Address: ", self.ip)
+        print("Port Number: ", self.udp_port)
+        print ("*"*50)+"\n"
+        success=True
+        break
+      except Exception:
+        print "Failed To Bind Port: {}".format(self.udp_port)
+        self.udp_port-=i
+    if not success:
+      print "\n"+("*"*50)
+      print "\n"+("*"*15)+" UDP FAILED TO BIND "+("*"*15)
+      print ("*"*50)
 
     self.listen()
 
@@ -86,18 +42,22 @@ class NetworkListener:
     try:
       self.ip = socket.gethostbyname(socket.gethostname())
     except Exception:
-      self.ip = "128.237.167.114"#"127.0.0.1"
+      print "\n"+("*"*50)
+      print ("*"*12)+" Forced To Use 127.0.0.1 "+("*"*13)
+      print ("*"*50)+"\n"
+      self.ip = "127.0.0.1"
 
   def listen(self):
       try:
         while True:
           self.data, self.address = self.socket.recvfrom(2048)
+
           try:
             self.motor_control.add_gesture(json.loads(self.data))
           except Exception:
-            print "Packet dropped: "+self.data
+            print "\nPacket Recieved: \n"+self.data
 
-          self.motor_control.run()
+          self.motor_control.move()
 
       except KeyboardInterrupt:
         self.motor_control.kill()
@@ -105,5 +65,4 @@ class NetworkListener:
         print "\n"+("*"*50)
         print "\nGoodbye"
 
-motor_control = MotorController()
-networkListener = NetworkListener(motor_control)
+NetworkListener()
