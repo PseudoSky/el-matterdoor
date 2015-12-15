@@ -42,44 +42,80 @@ import subprocess
 import sys
 import re
 import serial.tools.list_ports
-
 RX_BUFFER_SIZE = 128
 verbose=True
 is_running=False
 
-# Open grbl serial port
-# serial.tools.list_ports;
+class Grbl(object):
 
-serial_port = '/dev/tty.usbmodem1411'
-for p in serial.tools.list_ports.comports():
-    if 'usbmodem' in p[0]:
-        serial_port=p[0].replace('cu','tty')
-        print serial_port
-s = serial.Serial(serial_port,115200)
+    def __init__(self):
+        self.serial_port = '/dev/tty.usbmodem1451'
+        for p in serial.tools.list_ports.comports():
+            if 'usbmodem' in p[0]:
+                self.serial_port=p[0].replace('cu','tty')
+                print self.serial_port
+        self.s = serial.Serial(self.serial_port,115200)
+        # sys.stderr.write('grbl_streamer.py: starting\n')
+        print 'grbl_streamer.py: starting\n'
+        # sys.stderr.flush()
+
+        try:
+
+            # Wake up grbl
+            self.s.write("\r\n\r\n")
+            time.sleep(2)   # Wait for grbl to initialize
+            self.s.flushInput()  # Flush startup text in serial input
+            count=0
+            # run_gcode(['G21 G90 G17 G94 G54','G0 X0.000'])
+            cmd_buffer=[]
+            while True:
+
+                next_line = sys.stdin.readline().strip()
+
+                if "kill" in next_line:
+                    self.s.close()
+                    sys.stderr.write("Actually killed\n")
+                    # print "Actually killed"
+                    break
+                elif "is_running" in next_line:
+                    # sys.stderr.write(is_running and "Is Running" or "Is Not Running")
+                    print is_running and "Is Running" or "Is Not Running"
+
+                else:
+                    # sys.stderr.write( next_line)
+                    output=self.run_gcode([next_line])
+
+        except KeyboardInterrupt:
+            print "\n\n"+("*"*50)
+            print "\nKilling Motor Control And Closing Connection..."
+            self.s.close()
+            print "\nConnection Closed"
+            print "\n"+("*"*50)
+            print "\n\nGoodbye"
+
+        self.s.close()
 
 
 
+    # Stream g-code to grbl
 
 
+    def pp(s):
+        print self.s+""
+        # sys.stdout.write(s+'\n')
 
-# Stream g-code to grbl
-
-print '\npopen2:'
-def pp(s):
-    print s+""
-    # sys.stdout.write(s+'\n')
-
-    return 1
+        return 1
 
 
-def run_gcode(commands,serial_connections=[s]):
+    def run_gcode(self, commands):
 
-    # print f
-    l_count=0
-    g_count = 0
-    c_line = []
-
-    for s_conn in serial_connections:
+        # print f
+        print commands[0]
+        l_count=0
+        g_count = 0
+        c_line = []
+        scon=self.s
+        # for s_conn in serial_connections:
         for line in commands:
             l_count += 1 # Iterate line counter
             l_block = re.sub('\s|\(.*?\)','',line).upper() # Strip comments/spaces/new line and capitalize
@@ -89,8 +125,8 @@ def run_gcode(commands,serial_connections=[s]):
             grbl_out = ''
 
             # While the arduino buffer is too full to accept the next command, wait
-            while sum(c_line) >= RX_BUFFER_SIZE-1 | s.inWaiting() :
-                out_temp = s.readline().strip() # Wait for grbl response
+            while sum(c_line) >= RX_BUFFER_SIZE-1 | self.s.inWaiting() :
+                out_temp = self.s.readline().strip() # Wait for grbl response
                 if out_temp.find('ok') < 0 and out_temp.find('error') < 0 :
                     print "  Debug: ",out_temp # Debug response
                 else :
@@ -102,46 +138,8 @@ def run_gcode(commands,serial_connections=[s]):
 
 
             if verbose: print "SND: " + str(l_count) + " : " + l_block,
-            s.write(l_block + '\n') # Send g-code block to grbl
+            self.s.write(l_block + '\n') # Send g-code block to grbl
             if verbose : print "BUF:",str(sum(c_line)),"REC:",grbl_out
 
 
-# sys.stderr.write('grbl_streamer.py: starting\n')
-print 'grbl_streamer.py: starting\n'
-# sys.stderr.flush()
-
-try:
-
-    # Wake up grbl
-    s.write("\r\n\r\n")
-    time.sleep(2)   # Wait for grbl to initialize
-    s.flushInput()  # Flush startup text in serial input
-    count=0
-    run_gcode(['G21 G90 G17 G94 G54','G0 X0.000'])
-    cmd_buffer=[]
-    while True:
-
-        next_line = sys.stdin.readline().strip()
-
-        if "kill" in next_line:
-            s.close()
-            sys.stdout.write("Actually killed\n")
-            # print "Actually killed"
-            break
-        elif "is_running" in next_line:
-            sys.stdout.write(is_running and "Is Running" or "Is Not Running")
-            print is_running and "Is Running" or "Is Not Running"
-
-        else:
-            print next_line
-            output=run_gcode([next_line])
-
-except KeyboardInterrupt:
-    print "\n\n"+("*"*50)
-    print "\nKilling Motor Control And Closing Connection..."
-    s.close()
-    print "\nConnection Closed"
-    print "\n"+("*"*50)
-    print "\n\nGoodbye"
-
-s.close()
+Grbl()

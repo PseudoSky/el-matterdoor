@@ -53,11 +53,14 @@ class NetworkListener:
           self.data, self.address = self.socket.recvfrom(2048)
 
           try:
-            self.motor_control.add_gesture(json.loads(self.data))
+            movement=json.loads(self.data)
+            self.motor_control.run(movement["name"])
+            # self.motor_control.add_gesture()
+
           except Exception:
             print "\nPacket Recieved: \n"+self.data
 
-          self.motor_control.move()
+          # self.motor_control.move()
 
       except KeyboardInterrupt:
         self.motor_control.kill()

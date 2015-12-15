@@ -2,24 +2,26 @@ from collections import deque
 
 class Behavior(object):
   """docstring for Behavior"""
+  gestures={ "Wave_Left":["G0 Z100","G0 Z-100"],
+      "Wave_Right":["G0 Z-100","G0 Z100"],
+      "Spin_Left":["G0 X300 Y300 Z300"],
+      "Spin_Right":["G0 X-300 Y-300 Z-300"],
+      "Step_Left":["G0 X100 Y-100"],
+      "Step_Right":["G0 X-100 Y100"],
+      "Jump":["G0 X-300 Y300 Z-300","G0 X300 Y-300 Z300"],
+      "Push":["G0 Y300 Z-300"],
+      "Pull":["G0 Y-300 Z300"],
+      "Kick_Left":["G0 X-100 Y-100","G0 X100 Y100"],
+      "Kick_Right":["G0 X100 Y100","G0 X-100 Y-100"],
+      "WalkForward":["G0 X600 Y300 Z100"],
+      "WalkBackward":["G0 X-100 Y-300 Z-600"],
+      "WalkAway":["G0 X 300","G0 X-300"],
+      "Clap":["G0 Y100 Z100","G0 Y-100 Z-100"],
+      "StandStill":["G0 X0 Y0 Z0"]}
+
   def __init__(self):
     super(Behavior, self).__init__()
-    self.Gestures={ "Wave_Left":["G0 Z100","G0 Z-100"],
-                    "Wave_Right":["G0 Z-100","G0 Z100"],
-                    "Spin_Left":["G0 X300 Y300 Z300"],
-                    "Spin_Right":["G0 X-300 Y-300 Z-300"],
-                    "Step_Left":["G0 X100 Y-100"],
-                    "Step_Right":["G0 X-100 Y100"],
-                    "Jump":["G0 X-300 Y300 Z-300","G0 X300 Y-300 Z300"],
-                    "Push":["G0 Y300 Z-300"],
-                    "Pull":["G0 Y-300 Z300"],
-                    "Kick_Left":["G0 X-100 Y-100","G0 X100 Y100"],
-                    "Kick_Right":["G0 X100 Y100","G0 X-100 Y-100"],
-                    "WalkForward":["G0 X600 Y300 Z100"],
-                    "WalkBackward":["G0 X-100 Y-300 Z-600"],
-                    "WalkAway":["G0 X 300","G0 X-300"],
-                    "Clap":["G0 Y100 Z100","G0 Y-100 Z-100"],
-                    "StandStill":["G0 X0 Y0 Z0"]}
+
 
     self.default_movement=['G0 X100 F300.944','G0 X120.000 F300.944']
 
@@ -27,15 +29,19 @@ class Behavior(object):
     self.last_gesture=None
 
   def for_gesture(self,gesture_name):
-    return self.Gestures[gesture_name]
+    return self.gestures[gesture_name]
 
   def add_gesture(self, g):
-    if((len(self.g_cue) == 0) or  (g["name"] != self.g_cue[-1])):
-      print "Gesture "+g+" added to the queue."
-      self.g_cue.append(g["name"]);
+    print "Adding In Behavior"
+    # if((len(self.g_cue) == 0) or  (g["name"] != self.g_cue[-1])):
+    print "Gesture "+g+" added to the queue."
+    self.g_cue.append(g["name"]);
+
 
   def next(self):
     if len(self.g_cue)>0:
-      return self.Gesture[self.g_cue.popleft()]
+      print "Gcue"+ str(len(self.g_cue))
+      return self.gestures[self.g_cue.popleft()]
     else:
+      print "Default WRONG"+ str(len(self.g_cue))
       return self.default_movement
