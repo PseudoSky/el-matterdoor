@@ -6,45 +6,46 @@ import signal
 
 # from behavior import Behavior
 from collections import deque
-gestures = { "Wave_Left":["G0 Z100","G0 Z-100"],
-          "Wave_Right":["G0 Z-100","G0 Z100"],
-          "Spin_Left":["G0 X300 Y300 Z300"],
-          "Spin_Right":["G0 X-300 Y-300 Z-300"],
-          "Step_Left":["G0 X100 Y-100"],
-          "Step_Right":["G0 X-100 Y100"],
-          "Jump":["G0 X-300 Y300 Z-300","G0 X300 Y-300 Z300"],
-          "Push":["G0 Y300 Z-300"],
-          "Pull":["G0 Y-300 Z300"],
-          "Kick_Left":["G0 X-100 Y-100","G0 X100 Y100"],
-          "Kick_Right":["G0 X100 Y100","G0 X-100 Y-100"],
-          "WalkForward":["G0 X600 Y300 Z100"],
-          "WalkBackward":["G0 X-100 Y-300 Z-600"],
-          "WalkAway":["G0 X 300","G0 X-300"],
-          "Clap":["G0 Y100 Z100","G0 Y-100 Z-100"],
-          "StandStill":["G0 X0 Y0 Z0"]}
+gestures = { "Wave_Left":["G0 X100 Y100 Z20","G0 Z-20"],
+          "Wave_Right":["G0 Z-10","G0 Z10"],
+          "Spin_Left":["G0 X30 Y30 Z30"],
+          "Spin_Right":["G0 X-30 Y-30 Z-30"],
+          "Step_Left":["G0 X10 Y-10"],
+          "Step_Right":["G0 X-10 Y10 Z100"],
+          "Jump":["G0 X-30 Y30 Z-30","G0 X30 Y-30 Z30"],
+          "Push":["G0 X10 Y30 Z-30"],
+          "Pull":["G0 X-10 Y-30 Z30"],
+          "Kick_Left":["G0 X-10 Y-10","G0 X10 Y10"],
+          "Kick_Right":["G0 X10 Y10","G0 X-10 Y-10"],
+          "WalkForward":["G0 X60 Y30 Z10"],
+          "WalkBackward":["G0 X-10 Y-30 Z-60"],
+          "WalkAway":["G0 X30 Z10","G0 X-30 Z10"],
+          "Clap":["G0 Y10 Z10","G0 Y-10 Z-10"],
+          "StandStill":["G0 X1 Y-1 Z5"]}
+import random
 class Behavior(object):
   """docstring for Behavior"""
-  gestures={ "Wave_Left":["G0 Z100","G0 Z-100"],
-          "Wave_Right":["G0 Z-100","G0 Z100"],
-          "Spin_Left":["G0 X300 Y300 Z300"],
-          "Spin_Right":["G0 X-300 Y-300 Z-300"],
-          "Step_Left":["G0 X100 Y-100"],
-          "Step_Right":["G0 X-100 Y100"],
-          "Jump":["G0 X-300 Y300 Z-300","G0 X300 Y-300 Z300"],
-          "Push":["G0 Y300 Z-300"],
-          "Pull":["G0 Y-300 Z300"],
-          "Kick_Left":["G0 X-100 Y-100","G0 X100 Y100"],
-          "Kick_Right":["G0 X100 Y100","G0 X-100 Y-100"],
-          "WalkForward":["G0 X600 Y300 Z100"],
-          "WalkBackward":["G0 X-100 Y-300 Z-600"],
-          "WalkAway":["G0 X 300","G0 X-300"],
-          "Clap":["G0 Y100 Z100","G0 Y-100 Z-100"],
-          "StandStill":["G0 X0 Y0 Z0"]}
+  gestures={ "Wave_Left":["G0 X100 Y100 Z20","G0 Z-20"],
+          "Wave_Right":["G0 Z-10","G0 Z10"],
+          "Spin_Left":["G0 X30 Y30 Z30"],
+          "Spin_Right":["G0 X-30 Y-30 Z-30"],
+          "Step_Left":["G0 X10 Y-10"],
+          "Step_Right":["G0 X-10 Y10 Z100"],
+          "Jump":["G0 X-30 Y30 Z-30","G0 X30 Y-30 Z30"],
+          "Push":["G0 X10 Y30 Z-30"],
+          "Pull":["G0 X-10 Y-30 Z30"],
+          "Kick_Left":["G0 X-10 Y-10","G0 X10 Y10"],
+          "Kick_Right":["G0 X10 Y10","G0 X-10 Y-10"],
+          "WalkForward":["G0 X60 Y30 Z10"],
+          "WalkBackward":["G0 X-10 Y-30 Z-60"],
+          "WalkAway":["G0 X30 Z10","G0 X-30 Z10"],
+          "Clap":["G0 Y10 Z10","G0 Y-10 Z-10"],
+          "StandStill":[""]}
   def __init__(self):
     super(Behavior, self).__init__()
 
 
-    self.default_movement=['G0 X100 F300.944','G0 X120.000 F300.944']
+    self.default_movement=['G0 X10 F30.944','G0 X12.000 F30.944']
 
     self.g_cue=deque()
     self.last_gesture=None
@@ -56,18 +57,20 @@ class Behavior(object):
     print "Adding In Behavior"
     # if((len(self.g_cue) == 0) or  (g["name"] != self.g_cue[-1])):
     print "Gesture "+g+" added to the queue."
-    self.g_cue.append(g);
+    if g!= "StandStill":
+      self.g_cue.append(g);
 
 
   def next(self):
     if len(self.g_cue)>0:
-      print "Gcue"+ str(len(self.g_cue))
+      
       self.last_gesture=self.g_cue.popleft()
-      print self.last_gesture+str(self.gestures[self.last_gesture])
+      print "Loading From Gcue"+str(self.gestures[self.last_gesture])
+      # print self.last_gesture+str(self.gestures[self.last_gesture])
       return self.gestures[self.last_gesture]
     else:
-      print "Default WRONG"+ str(len(self.g_cue))
-      return self.default_movement
+      print "Nothing To Do"
+      # return random.choice(self.gestures.values())
 
 
 class MotorController:
@@ -80,12 +83,13 @@ class MotorController:
     self.behavior=Behavior()
 
     for i in range(10):
-      self.proc.stdin.write('G0 X%.3f F300.944\n' % (10+i*10) )
+      self.proc.stdin.write('G0 X%.3f F30.944\n' % (10+i*10) )
 
 
   def add_gesture(self, g):
     print "Adding"
-    self.behavior.g_cue.append(g["name"]);
+    if g["name"]!="StandStill":
+      self.behavior.g_cue.append(g["name"]);
 
   def move(self):
     # time.sleep(5)
@@ -93,9 +97,10 @@ class MotorController:
     print self.current_movement
     for cmd in self.current_movement:
 
-      self.proc.stdin.write(cmd)
-      print "Processed Command: "+cmd
+      self.proc.stdin.write(cmd+"\n")
+      print "Move From Queue: "+cmd
 
+    return self.current_movement
   def run(self,g):
     # time.sleep(5)
     self.current_movement=gestures[g]

@@ -54,7 +54,11 @@ class NetworkListener:
 
           try:
             movement=json.loads(self.data)
-            self.motor_control.run(movement["name"])
+            # self.motor_control.run(movement["name"])
+            if movement["confidence"]>.3:
+              self.motor_control.add_gesture(movement)
+              print self.motor_control.move()
+              print movement["name"]
             # self.motor_control.add_gesture()
 
           except Exception:

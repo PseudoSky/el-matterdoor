@@ -2,14 +2,14 @@ from collections import deque
 
 class Behavior(object):
   """docstring for Behavior"""
-  gestures={ "Wave_Left":["G0 Z100","G0 Z-100"],
+  gestures={ "Wave_Left":["G0 Z30","G0 Z-30","G0 Z0"],
       "Wave_Right":["G0 Z-100","G0 Z100"],
       "Spin_Left":["G0 X300 Y300 Z300"],
       "Spin_Right":["G0 X-300 Y-300 Z-300"],
       "Step_Left":["G0 X100 Y-100"],
       "Step_Right":["G0 X-100 Y100"],
       "Jump":["G0 X-300 Y300 Z-300","G0 X300 Y-300 Z300"],
-      "Push":["G0 Y300 Z-300"],
+      "Push":["G0 Y-300 Z300"],
       "Pull":["G0 Y-300 Z300"],
       "Kick_Left":["G0 X-100 Y-100","G0 X100 Y100"],
       "Kick_Right":["G0 X100 Y100","G0 X-100 Y-100"],
@@ -23,7 +23,7 @@ class Behavior(object):
     super(Behavior, self).__init__()
 
 
-    self.default_movement=['G0 X100 F300.944','G0 X120.000 F300.944']
+    self.default_movement=['G0 X100','G0 X0.000']
 
     self.g_cue=deque()
     self.last_gesture=None
