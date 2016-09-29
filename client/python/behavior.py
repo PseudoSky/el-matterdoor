@@ -34,6 +34,11 @@ class Behavior(object):
   def add_gesture(self, g):
     print "Adding In Behavior"
     # if((len(self.g_cue) == 0) or  (g["name"] != self.g_cue[-1])):
+    if(g["cmd"]):
+      self.line_count+=1
+      g["name"]=str(self.line_count)
+      self.Gestures[g["name"]]=g["cmd"]
+      print 'Adding gcode cmd: '+g["cmd"]
     print "Gesture "+g+" added to the queue."
     self.g_cue.append(g["name"]);
 

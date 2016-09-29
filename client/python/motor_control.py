@@ -41,6 +41,7 @@ class Behavior(object):
           "WalkAway":["G0 X30 Z10","G0 X-30 Z10"],
           "Clap":["G0 Y10 Z10","G0 Y-10 Z-10"],
           "StandStill":[""]}
+  line_count=0
   def __init__(self):
     super(Behavior, self).__init__()
 
@@ -56,7 +57,13 @@ class Behavior(object):
   def add_gesture(self, g):
     print "Adding In Behavior"
     # if((len(self.g_cue) == 0) or  (g["name"] != self.g_cue[-1])):
-    print "Gesture "+g+" added to the queue."
+    print "Gesture "+str(g)+" added to the queue."
+    if "cmd" in g:
+      self.line_count+=1
+      g["name"]=str(self.line_count)
+      print str(g)
+      self.gestures[g["name"]]=[g["cmd"]]
+      print 'Adding gcode cmd: '+str(self.gestures[g["name"]]) +' should = '+str(g["cmd"])
     if g!= "StandStill":
       self.g_cue.append(g);
 
@@ -75,7 +82,7 @@ class Behavior(object):
 
 class MotorController:
   def __init__(self):
-    self.proc = subprocess.Popen('python grbl_streamer.py',
+    self.proc = subprocess.Popen('python `pwd`/client/python/grbl_streamer.py',
                         shell=True,
                         stdin=subprocess.PIPE,
                         stdout=subprocess.PIPE,
@@ -88,8 +95,9 @@ class MotorController:
 
   def add_gesture(self, g):
     print "Adding"
-    if g["name"]!="StandStill":
-      self.behavior.g_cue.append(g["name"]);
+    if "cmd" in g or g["name"]!="StandStill":
+      self.behavior.add_gesture(g)
+      # self.behavior.g_cue.append(g["name"]);
 
   def move(self):
     # time.sleep(5)
